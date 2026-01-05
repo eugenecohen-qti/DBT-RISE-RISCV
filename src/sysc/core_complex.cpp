@@ -214,21 +214,21 @@ template <unsigned int BUSWIDTH, typename QK> void core_complex<BUSWIDTH, QK>::i
     SC_METHOD(rst_cb);
     sensitive << rst_i;
 #ifdef USE_TLM_SIGNAL
-    sw_irq_i.register_nb_transport([this](tlm::scc::tlm_signal_gp<bool>& gp, tlm::tlm_phase& p, sc_core::sc_time& t) {
-        cpu->local_irq(3, gp.get_value());
+    clint_irq_i[SW_IRQ].register_nb_transport([this](tlm::scc::tlm_signal_gp<bool>& gp, tlm::tlm_phase& p, sc_core::sc_time& t) {
+        core->local_irq(SW_IRQ, gp.get_value());
         return tlm::TLM_COMPLETED;
     });
-    timer_irq_i.register_nb_transport([this](tlm::scc::tlm_signal_gp<bool>& gp, tlm::tlm_phase& p, sc_core::sc_time& t) {
-        cpu->local_irq(7, gp.get_value());
+    clint_irq_i[TIMER_IRQ].register_nb_transport([this](tlm::scc::tlm_signal_gp<bool>& gp, tlm::tlm_phase& p, sc_core::sc_time& t) {
+        core->local_irq(TIMER_IRQ, gp.get_value());
         return tlm::TLM_COMPLETED;
     });
-    ext_irq_i.register_nb_transport([this](tlm::scc::tlm_signal_gp<bool>& gp, tlm::tlm_phase& p, sc_core::sc_time& t) {
-        cpu->local_irq(11, gp.get_value());
+    clint_irq_i[EXT_IRQ].register_nb_transport([this](tlm::scc::tlm_signal_gp<bool>& gp, tlm::tlm_phase& p, sc_core::sc_time& t) {
+        core->local_irq(EXT_IRQ, gp.get_value());
         return tlm::TLM_COMPLETED;
     });
-    for(auto i = 0U; i < local_irq_i.size(); ++i)
-        local_irq_i[i].register_nb_transport([this, i](tlm::scc::tlm_signal_gp<bool>& gp, tlm::tlm_phase& p, sc_core::sc_time& t) {
-            cpu->local_irq(16 + i, gp.get_value());
+    for(uint32_t i = LOCAL_IRQ_START; i < clint_irq_i.size(); ++i)
+        clint_irq_i[i].register_nb_transport([this, i](tlm::scc::tlm_signal_gp<bool>& gp, tlm::tlm_phase& p, sc_core::sc_time& t) {
+            core->local_irq(i, gp.get_value());
             return tlm::TLM_COMPLETED;
         });
 #else
@@ -270,7 +270,7 @@ template <unsigned int BUSWIDTH, typename QK> void core_complex<BUSWIDTH, QK>::b
         return;
 #ifndef CWR_SYSTEMC
     if(!local_irq_num.is_default_value()) {
-        core->set_irq_count(16 + local_irq_num);
+        core->set_irq_count(LOCAL_IRQ_START + local_irq_num);
     }
 #endif
     sc_assert(vm);
